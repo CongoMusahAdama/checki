@@ -317,7 +317,7 @@ export default function App() {
           </div>
         </div>
         <div className="splash-footer">
-          <p>© 2026 Duapa Software. All rights reserved.</p>
+          <p>© 2026 Musah's Software. All rights reserved.</p>
         </div>
         <Toast message={toast.message} visible={toast.visible} />
       </div>
