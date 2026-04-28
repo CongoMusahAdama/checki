@@ -1,0 +1,15 @@
+.note-item-pro {
+  padding: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+}
+
+.note-header-pro { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.note-user-pro { display: flex; align-items: center; gap: 10px; }
+.note-av-pro { width: 24px; height: 24px; border-radius: 50%; font-size: 0.6rem; font-weight: 800; color: #000; display: flex; align-items: center; justify-content: center; }
+.note-uid-pro { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
+.note-time-pro { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+
+.note-body-pro { font-size: 0.95rem; color: var(--text-primary); line-height: 1.6; font-weight: 400; }

@@ -1,0 +1,65 @@
+.sheet-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 200; opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.sheet-overlay.show { opacity: 1; pointer-events: all; }
+
+.bottom-sheet {
+  position: fixed; bottom: 0; left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  width: 100%; max-width: var(--max-w);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 24px 24px 0 0;
+  padding: 14px 24px 40px;
+  z-index: 201;
+  transition: transform 0.3s cubic-bezier(0.32, 1, 0.5, 1);
+  box-shadow: 0 -16px 48px rgba(0,0,0,0.6);
+}
+.bottom-sheet.show { transform: translateX(-50%) translateY(0); }
+
+.sheet-handle {
+  width: 36px; height: 4px; border-radius: 4px;
+  background: var(--border-strong); margin: 0 auto 20px;
+}
+.sheet-title { font-size: 1.1rem; font-weight: 800; text-align: center; margin-bottom: 4px; color: var(--text-primary); }
+.sheet-subtitle { font-size: 0.85rem; color: var(--text-secondary); text-align: center; margin-bottom: 24px; }
+
+.sheet-select-wrap { position: relative; margin-bottom: 16px; }
+
+.area-dropdown {
+  width: 100%; padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated); font-family: inherit;
+  font-size: 1rem; color: var(--text-primary);
+  cursor: pointer; appearance: none; -webkit-appearance: none;
+  transition: border-color 0.2s;
+}
+.area-dropdown:focus { outline: none; border-color: var(--border-strong); }
+
+.sheet-btns {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-bottom: 12px;
+}
+.btn-sheet {
+  padding: 18px 8px; border-radius: var(--radius-md);
+  border: none; font-family: inherit;
+  font-size: 0.85rem; font-weight: 800;
+  cursor: pointer; transition: transform 0.15s;
+}
+.btn-sheet:active { transform: scale(0.96); }
+.btn-sheet-off { background: transparent; border: 1px solid var(--accent-red); color: var(--accent-red); }
+.btn-sheet-on { background: var(--accent-green); color: #000; }
+
+.btn-sheet-cancel {
+  width: 100%; padding: 14px;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: var(--radius-md); font-family: inherit;
+  font-size: 0.85rem; font-weight: 600;
+  color: var(--text-secondary); cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-sheet-cancel:hover { color: var(--text-primary); border-color: var(--border-strong); }
