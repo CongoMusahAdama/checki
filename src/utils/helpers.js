@@ -170,10 +170,12 @@ export function getScheduleForDay(dayIdx) {
       { time: 'MORNING',   period:'6:00 AM – 12:00 PM', status: 'off',         label: 'Outage (Block 2)', hours: '6 hrs outage', reason: 'GRIDCo Akosombo Fire' },
       { time: 'AFTERNOON', period:'12:00 PM – 12:00 AM', status: 'stable',     label: 'Likely Stable',   hours: 'No scheduled outages' },
     ],
-    // Future Days (Standardize to 'Likely Stable' to avoid mock predictions)
+    // Day 1 (Tomorrow - Wednesday, 29th April 2026)
     [
-      { time: 'ALL DAY',   period:'12:00 AM – 12:00 AM', status: 'stable',     label: 'Likely Stable',   hours: 'No scheduled outages' },
+      { time: 'EARLY',     period:'12:00 AM – 6:00 AM', status: 'off',         label: 'Outage (Block 1)', hours: '6 hrs outage', reason: 'GRIDCo System Maintenance' },
+      { time: 'REST DAY',  period:'6:00 AM – 12:00 AM', status: 'stable',      label: 'Likely Stable',   hours: 'No scheduled outages' },
     ],
+    // Future Days
     [
       { time: 'ALL DAY',   period:'12:00 AM – 12:00 AM', status: 'stable',     label: 'Likely Stable',   hours: 'No scheduled outages' },
     ],

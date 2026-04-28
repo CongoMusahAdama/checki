@@ -13,7 +13,9 @@ import BottomSheet from './components/BottomSheet';
 import Toast       from './components/Toast';
 import logo        from './assets/logo.png';
 import splashBg    from './assets/spalsh.png';
-import { OUTAGE_SCHEDULE_TODAY } from './data/outageSchedule.js';
+import ecg1        from './assets/ecg1.png';
+import ecg2        from './assets/ecg2.png';
+import { OUTAGE_SCHEDULE_TODAY, OUTAGE_SCHEDULE_TOMORROW } from './data/outageSchedule.js';
 
 import './App.css';
 
@@ -33,7 +35,8 @@ const Icons = {
   Send: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>,
   VerifiedSmall: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path></svg>,
   Alert: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>,
-  Clock: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+  Clock: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>,
+  Download: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
 };
 
 function normaliseArea(str) {
@@ -189,12 +192,17 @@ export default function App() {
   const myAreaResult = useMemo(() => {
     const q = normaliseArea(myAreaQuery);
     if (!q) return null;
-    const hit = OUTAGE_SCHEDULE_TODAY.blocks.find(b =>
+    
+    // Choose schedule based on selected day
+    const activeSchedule = selectedDayIdx === 1 ? OUTAGE_SCHEDULE_TOMORROW : OUTAGE_SCHEDULE_TODAY;
+    
+    // Search within the blocks of the active schedule
+    const hit = activeSchedule.blocks.find(b =>
       b.areas.some(a => normaliseArea(a) === q)
     );
     if (!hit) return { status: 'safe' };
     return { status: 'affected', block: hit };
-  }, [myAreaQuery]);
+  }, [myAreaQuery, selectedDayIdx]);
 
   const openZone = (id) => {
     setSelectedZoneId(id);
@@ -237,13 +245,56 @@ export default function App() {
 
   const handleLocationAccess = () => {
     if (!navigator.geolocation) { showToast('Location not supported'); return; }
-    showToast('Detecting location...');
+    showToast('Detecting your community...');
+    
     navigator.geolocation.getCurrentPosition(
-      () => { 
-        showToast('Location found'); 
-        setTimeout(() => openZone('sekondi'), 500); 
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        
+        try {
+          // Real reverse geocoding using OpenStreetMap (Nominatim)
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+            headers: { 'User-Agent': 'Checki-App-V3' }
+          });
+          const data = await response.json();
+          
+          if (data && data.address) {
+            // Get all address values as an array of strings
+            const addressValues = Object.values(data.address).map(val => normaliseArea(val));
+            
+            // Try to find a zone that matches ANY part of the detected address
+            const matchedZone = zones.find(z => {
+              const normZoneName = normaliseArea(z.name);
+              return addressValues.some(val => val.includes(normZoneName) || normZoneName.includes(val));
+            });
+
+            if (matchedZone) {
+              showToast(`Located in ${matchedZone.name}`);
+              setTimeout(() => openZone(matchedZone.id), 800);
+            } else {
+              // Extract the most likely community name for display
+              const communityName = data.address.suburb || 
+                                    data.address.neighbourhood || 
+                                    data.address.village || 
+                                    data.address.town || 
+                                    data.address.city_district ||
+                                    'Unknown Area';
+              showToast(`You are in ${communityName}`);
+              setTimeout(() => setView('search'), 1500);
+            }
+          } else {
+            showToast('Could not identify community. Try searching.');
+          }
+        } catch (error) {
+          console.error('Geocoding error:', error);
+          showToast('Location service unavailable');
+        }
       },
-      () => showToast('Access denied. Please enter manually.')
+      (error) => {
+        console.warn('Geolocation error:', error);
+        showToast('Access denied. Please enter manually.');
+      },
+      { timeout: 10000 }
     );
   };
 
@@ -256,10 +307,7 @@ export default function App() {
           <img src={logo} alt="Checki Logo" className="splash-logo-min" />
         </div>
         <div className="splash-content">
-          <div className="location-icon-wrapper">
-            <Icons.Location />
-          </div>
-          <h1 className="splash-title">Your Location?</h1>
+          <h1 className="splash-title">Power Outage, <br/> Checki Hwe?</h1>
           <p className="splash-desc">
             Know Before The Lights Go Out. Check if your area has power, report outages, and read live updates from your community.
           </p>
@@ -267,6 +315,9 @@ export default function App() {
             <button className="btn-allow-location" onClick={handleLocationAccess}>Allow Location Access</button>
             <button className="btn-manual-entry" onClick={() => setView('search')}>Enter Location Manually</button>
           </div>
+        </div>
+        <div className="splash-footer">
+          <p>© 2026 Duapa Software. All rights reserved.</p>
         </div>
         <Toast message={toast.message} visible={toast.visible} />
       </div>
@@ -330,7 +381,7 @@ export default function App() {
 
               <div className="live-pulse">
                 <span className="pulse-dot"></span>
-                <span>LIVE UPDATES</span>
+                <span>LIVE UPDATES — TODAY</span>
               </div>
               <h1 className="hero-status-text">{heroLabel(currentZone?.status)}</h1>
               <div className="hero-confidence-v2">
@@ -389,6 +440,14 @@ export default function App() {
                   {currentZone?.status === 'off' && <div className="tg-hint">Outage Active</div>}
                 </div>
               </div>
+              
+              <button 
+                className="btn-view-tomorrow" 
+                onClick={() => { setActiveTab('schedule'); setSelectedDayIdx(1); window.scrollTo(0, 0); }}
+              >
+                <span>View for Tomorrow</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              </button>
 
               <div className="timing-footer-v3">
                 <span className="tf-lbl">Last Outage Detected:</span>
@@ -419,10 +478,17 @@ export default function App() {
 
         {activeTab === 'schedule' && (
           <div className="tab-pane animate-fade-in schedule-pane-v2">
-            <div className="calendar-container-v2">
-              <div className="calendar-month-v2">
-                {getNext7Days()[selectedDayIdx].fullMonth} {getNext7Days()[selectedDayIdx].year}
+            <div className="sticky-schedule-header">
+              <div className="premium-calendar-header">
+                <div className="calendar-month-v2">
+                  {getNext7Days()[selectedDayIdx].fullMonth} {getNext7Days()[selectedDayIdx].year}
+                </div>
+                <div className="calendar-sub-label">
+                  <Icons.Calendar />
+                  <span>7-Day Power Forecast</span>
+                </div>
               </div>
+
               <div className="day-selector-v2">
                 {getNext7Days().map((d, i) => (
                   <button 
@@ -436,78 +502,88 @@ export default function App() {
                   </button>
                 ))}
               </div>
+
+              <div className="premium-search-footer">
+                <h3 className="section-title-v2">Is my area affected?</h3>
+                <div className="premium-search-box">
+                  <Icons.Search />
+                  <input
+                    placeholder="Type area name (e.g. Fijai)"
+                    value={myAreaQuery}
+                    onChange={(e) => setMyAreaQuery(e.target.value)}
+                  />
+                  {myAreaQuery && <Icons.X onClick={() => setMyAreaQuery('')} style={{ cursor: 'pointer' }} />}
+                </div>
+                
+                {myAreaResult && (
+                  <div className={`search-result-premium ${myAreaResult.status === 'affected' ? 'affected' : 'safe'}`}>
+                    <div className="sr-title">
+                      {myAreaResult.status === 'affected' ? '⚠️ Affected' : '✅ No Outage'}
+                    </div>
+                    <div className="sr-desc">
+                      {myAreaResult.status === 'affected' 
+                        ? `${toTitleCase(myAreaQuery)} is scheduled for outage from ${myAreaResult.block.start} to ${myAreaResult.block.end}.`
+                        : `No scheduled outage found for "${toTitleCase(myAreaQuery)}" today.`
+                      }
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="daily-timeline-v2">
+            {selectedDayIdx <= 1 && (
+              <div className="official-notices-v2">
+                <h3 className="section-title-v2">Official ECG Notice</h3>
+                <div className="notice-cards-grid" style={{ gridTemplateColumns: '1fr' }}>
+                  <a 
+                    href={selectedDayIdx === 0 ? ecg1 : ecg2} 
+                    download={`ECG_Schedule_${selectedDayIdx === 0 ? 'Today' : 'Tomorrow'}.png`} 
+                    className="notice-card-pro"
+                  >
+                    <div className="nc-icon"><Icons.Download /></div>
+                    <div className="nc-info">
+                      <span className="nc-name">{selectedDayIdx === 0 ? "Today's" : "Tomorrow's"} Official Schedule</span>
+                      <span className="nc-meta">Tap to download official image notice</span>
+                    </div>
+                  </a>
+                </div>
+              </div>
+            )}
+
+            <div className="daily-timeline-v2" style={{ paddingTop: '20px' }}>
               {getScheduleForDay(selectedDayIdx).map((block, idx) => (
-                <div key={idx} className="timeline-block-v2">
-                  <div className="block-time">{block.period}</div>
-                  <div className={`block-content ${block.status === 'off' ? 'status-off' : block.status === 'maintenance' ? 'status-maintenance' : 'status-stable'}`}>
-                    <div className="block-status-line"></div>
-                    <div className="block-info">
-                      <h4>{block.label}</h4>
-                      <p>{block.hours}</p>
-                      {block.reason && <span className="reason-tag">{block.reason}</span>}
+                <div key={idx} className={`timeline-block-v2 ${block.status === 'off' ? 'status-off' : block.status === 'maintenance' ? 'status-maintenance' : 'status-stable'}`}>
+                  <div className="timeline-left">
+                    <div className="timeline-time-label">{block.period.split(' – ')[0]}</div>
+                    <div className="timeline-dot" />
+                    <div className="timeline-line" />
+                  </div>
+                  <div className="block-content">
+                    <div className="block-header-row">
+                      <div className="block-info">
+                        <h4>{block.label}</h4>
+                        <div className="block-period-sub">{block.period}</div>
+                      </div>
+                      <div className="status-badge-min">
+                        {block.status === 'off' ? 'Outage' : block.status === 'maintenance' ? 'Maint' : 'Stable'}
+                      </div>
                     </div>
-                    <div className="block-icon-v2">
-                      {block.status === 'off' ? '🔴' : block.status === 'maintenance' ? '🟡' : '🟢'}
+                    <div className="block-body-row">
+                      <div className="block-icon-premium">
+                        {block.status === 'off' ? '🔴' : block.status === 'maintenance' ? '🟡' : '🟢'}
+                      </div>
+                      <div className="block-hours-text">{block.hours}</div>
                     </div>
+                    {block.reason && <span className="reason-tag-premium">{block.reason}</span>}
                   </div>
                 </div>
               ))}
-            </div>
-
-            <div className="report-section-v2">
-              <h3 className="section-title-v2">Search Affected Area</h3>
-              <div className="outage-check__row" style={{ boxShadow: 'none', background: '#fff', border: '1.5px solid var(--border)' }}>
-                <div className="outage-check__icon"><Icons.Search /></div>
-                <input
-                  className="outage-check__input"
-                  placeholder="Is my area affected today?"
-                  value={myAreaQuery}
-                  onChange={(e) => setMyAreaQuery(e.target.value)}
-                />
-                {myAreaQuery && (
-                  <button className="outage-check__clear" onClick={() => setMyAreaQuery('')} aria-label="Clear">
-                    <Icons.X />
-                  </button>
-                )}
-              </div>
-              {myAreaResult && (
-                <div className={`outage-check__result ${myAreaResult.status === 'affected' ? 'danger' : 'safe'}`} style={{ marginTop: '12px' }}>
-                  {myAreaResult.status === 'affected' ? (
-                    <>
-                      <div className="ocr-title">⚠️ {toTitleCase(myAreaQuery)} is affected</div>
-                      <div className="ocr-sub">🕒 {myAreaResult.block.start} – {myAreaResult.block.end}</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="ocr-title">✅ No outage scheduled</div>
-                      <div className="ocr-sub">“{toTitleCase(myAreaQuery)}” not found in today's list.</div>
-                    </>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         )}
 
         {activeTab === 'community' && (
           <div className="tab-pane animate-fade-in community-pane-v5">
-            {/* --- Messenger Header --- */}
-            <div className="comm-v5-header">
-              <div className="cv5-top">
-                <button className="cv5-icon-btn"><Icons.User /></button>
-                <h3>Checki Community</h3>
-                <button className="cv5-icon-btn"><Icons.Edit /></button>
-              </div>
-              <div className="cv5-tabs">
-                <div className="cv5-tab active">All</div>
-                <div className="cv5-tab">My Zone <span className="cv5-badge">12</span></div>
-                <div className="cv5-tab">Alerts <span className="cv5-badge cv5-badge--blue">3</span></div>
-              </div>
-            </div>
-            
             {/* --- Messenger Feed --- */}
             <div className="comm-v5-feed">
               {currentZone?.notes.map((n, i) => (
