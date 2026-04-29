@@ -200,7 +200,7 @@ h1, h2, h3, h4 { font-family: var(--font-brand); }
 
 .results-label { font-size: 0.75rem; font-weight: 800; color: var(--text-muted); letter-spacing: 0.15em; margin-bottom: 20px; text-transform: uppercase; }
 
-.results-list { display: flex; flex-direction: column; gap: 12px; padding-bottom: 60px; }
+.results-list { display: flex; flex-direction: column; gap: 12px; padding-bottom: 100px; }
 
 .no-results-text { text-align: center; padding: 40px 0; color: var(--text-muted); font-size: 0.95rem; }
 
@@ -256,9 +256,28 @@ h1, h2, h3, h4 { font-family: var(--font-brand); }
   transform: scale(0.9);
 }
 
+/* Map Dark Mode Navigation Override */
+.bottom-nav.dark-nav {
+  background: #111;
+  border-top-color: #222;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
+}
+
+.dark-nav .nav-item {
+  color: #64748b;
+}
+
+.dark-nav .nav-item.active {
+  color: #facc15;
+}
+
+.dark-nav .nav-item span {
+  color: inherit;
+}
+
 /* ── TAB PANES ─────────────────────── */
 .tab-content { flex: 1; display: flex; flex-direction: column; }
-.tab-pane { width: 100%; flex: 1; }
+.tab-pane { width: 100%; flex: 1; padding-bottom: 90px; }
 
 .schedule-pane, .alert-pane { padding: 32px 24px; }
 .placeholder-card {

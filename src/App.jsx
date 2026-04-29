@@ -358,6 +358,10 @@ export default function App() {
   };
 
   const handleLocationAccess = () => {
+    // Immediate redirect to map as requested
+    setActiveTab('maps');
+    setView('results');
+
     if (!navigator.geolocation) {
       showToast('Location not supported on this device');
       return;
@@ -374,10 +378,7 @@ export default function App() {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
-        console.log(`Detected coords: ${lat}, ${lng}`);
         setUserCoords({ lat, lng });
-        setActiveTab('maps');
-        setStep('results');
         
         try {
           // Real reverse geocoding using OpenStreetMap (Nominatim)
@@ -761,7 +762,7 @@ export default function App() {
         )}
       </main>
 
-      <nav className="bottom-nav">
+      <nav className={`bottom-nav ${activeTab === 'maps' && isDarkMode ? 'dark-nav' : ''}`}>
         <button className={`nav-item ${activeTab === 'home' ? 'active' : ''}`} onClick={() => setActiveTab('home')}>
           <Icons.Home /><span>Home</span>
         </button>
