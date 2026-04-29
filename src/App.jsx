@@ -416,10 +416,31 @@ export default function App() {
                                     data.address.city_district ||
                                     data.address.county ||
                                     'Unknown Area';
+
+              showToast(`New community discovered: ${communityName}`);
               
-              showToast(`You are in ${communityName}`);
-              // Stay on map even if area isn't in predefined list
-              setSearch(communityName);
+              const newId = `discovered-${Date.now()}`;
+              const newZone = {
+                id: newId,
+                name: communityName,
+                status: 'on', // Start as ON but unconfirmed
+                reports: 1,   // Initial detection counts as first report
+                updatedMins: 0,
+                region: (data.address.city || data.address.county || 'Detected Area').toUpperCase(),
+                coords: [lat, lng],
+                isDiscovered: true
+              };
+
+              setZones(prev => {
+                // Prevent duplicate discovery
+                if (prev.some(z => z.name === communityName)) return prev;
+                return [...prev, newZone];
+              });
+
+              setTimeout(() => {
+                openZone(newId);
+                setActiveTab('maps');
+              }, 800);
             }
           } else {
             showToast('Could not identify area. Try searching.');
