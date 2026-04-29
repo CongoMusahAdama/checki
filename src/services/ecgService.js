@@ -135,7 +135,6 @@ export async function fetchECGZones() {
 
     return zones;
   } catch (err) {
-    console.warn('[ECG Service] Live fetch failed:', err.message);
-    return [];                           // caller handles the empty array
+    return [];                           // Fail silently to avoid console clutter
   }
 }

@@ -11,6 +11,8 @@ import {
 import ZoneCard    from './components/ZoneCard.jsx';
 import BottomSheet from './components/BottomSheet';
 import Toast       from './components/Toast';
+import MapComponent from './components/MapComponent';
+import FeedComponent from './components/FeedComponent';
 import logo        from './assets/logo.png';
 import splashBg    from './assets/spalsh.png';
 import ecg1        from './assets/ecg1.png';
@@ -28,6 +30,7 @@ const Icons = {
   X: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
   Home: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
   Calendar: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>,
+  Map: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"></path><circle cx="12" cy="10" r="3"></circle></svg>,
   Users: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>,
   Bell: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>,
   User: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
@@ -36,7 +39,8 @@ const Icons = {
   VerifiedSmall: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path></svg>,
   Alert: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>,
   Clock: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>,
-  Download: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+  Download: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
+  Feed: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg>
 };
 
 function normaliseArea(str) {
@@ -57,6 +61,8 @@ function toTitleCase(str) {
 export default function App() {
   const [view, setView]                     = useState('splash');
   const [activeTab, setActiveTab]           = useState('home');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMsg, setSuccessMsg]         = useState('');
   const [selectedZoneId, setSelectedZoneId] = useState(null);
   const [zones, setZones]                   = useState(INITIAL_ZONES);
   const [communityReports, setCommunityReports] = useState([]); // user-added notes
@@ -70,6 +76,7 @@ export default function App() {
   const [expandedBlocks, setExpandedBlocks] = useState(() => new Set());
   const [scheduleFilter, setScheduleFilter] = useState('all'); // all | saved
   const [myAreaQuery, setMyAreaQuery]       = useState('');
+  const [userCoords, setUserCoords]         = useState(null);
   const [savedAreas, setSavedAreas]         = useState(() => {
     try {
       const raw = localStorage.getItem('checki_saved_areas');
@@ -79,6 +86,11 @@ export default function App() {
       return [];
     }
   });
+
+  const isDarkMode = useMemo(() => {
+    const hour = new Date().getHours();
+    return hour >= 18 || hour < 6;
+  }, []);
 
   // Merge live ECG data while preserving user-added community reports
   const mergeECGData = useCallback((liveZones) => {
@@ -95,6 +107,8 @@ export default function App() {
         notes:   [...lz.notes, ...(prevMap[lz.id]?.notes?.filter(n => n.user !== 'ECG_Official') ?? [])],
       }));
     });
+    // Success logic: Redirect to map to see the update
+    setActiveTab('maps');
   }, []);
 
   // Initial live ECG fetch + auto-refresh every 5 minutes
@@ -218,19 +232,44 @@ export default function App() {
     setSelectedZoneId(null);
   };
 
-  const handleReport = (id, status) => {
+  const handleAddReport = (id, status) => {
     if (cooldown > 0) {
       showToast(`Please wait ${cooldown}s before reporting again`);
       return;
     }
     const targetId = id || selectedZoneId;
     if (!targetId) { showToast('Please select an area'); return; }
+    const targetZone = zones.find(z => z.id === targetId);
+    const prevReportCount = targetZone ? targetZone.reports : 0;
     
-    setZones(prev => prev.map(z =>
-      z.id === targetId ? { ...z, status, reports: z.reports + 1, updatedMins: 0 } : z
-    ));
+    setZones(prev => prev.map(z => {
+      if (z.id !== targetId) return z;
+      const newReportCount = z.reports + 1;
+      // Threshold: 3 reports to flip official status
+      const shouldFlipStatus = newReportCount >= 3;
+      return { 
+        ...z, 
+        status: shouldFlipStatus ? status : z.status, 
+        reports: newReportCount, 
+        updatedMins: 0 
+      };
+    }));
     setCooldown(120); // 2 minute cooldown
-    showToast(status === 'off' ? 'Reported outage' : 'Reported restoration');
+    
+    // Show Sweet Alert style success modal with contextual message
+    const isConfirmation = prevReportCount > 0 && prevReportCount < 3;
+    const msg = isConfirmation 
+      ? 'Verification received! Thank you for helping the community.'
+      : (status === 'off' ? 'Outage reported successfully!' : 'Power restoration reported!');
+    
+    setSuccessMsg(msg);
+    setShowSuccessModal(true);
+    
+    // Auto-hide and redirect after 2 seconds
+    setTimeout(() => {
+      setShowSuccessModal(false);
+      setActiveTab('maps');
+    }, 2000);
   };
 
   const handleAddNote = () => {
@@ -336,6 +375,9 @@ export default function App() {
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         console.log(`Detected coords: ${lat}, ${lng}`);
+        setUserCoords({ lat, lng });
+        setActiveTab('maps');
+        setStep('results');
         
         try {
           // Real reverse geocoding using OpenStreetMap (Nominatim)
@@ -360,7 +402,10 @@ export default function App() {
 
             if (matchedZone) {
               showToast(`Located in ${matchedZone.name}`);
-              setTimeout(() => openZone(matchedZone.id), 800);
+              setTimeout(() => {
+                openZone(matchedZone.id);
+                setActiveTab('maps'); // Switch to map to see the pointer
+              }, 800);
             } else {
               // Extract the most likely community name for display
               const communityName = data.address.suburb || 
@@ -372,9 +417,8 @@ export default function App() {
                                     'Unknown Area';
               
               showToast(`You are in ${communityName}`);
-              // If not found in our predefined list, send them to search with the community name pre-filled
+              // Stay on map even if area isn't in predefined list
               setSearch(communityName);
-              setTimeout(() => setView('search'), 1500);
             }
           } else {
             showToast('Could not identify area. Try searching.');
@@ -386,9 +430,13 @@ export default function App() {
       },
       (error) => {
         console.warn('Geolocation error:', error);
+        // Even if reverse geocoding or matching fails, we still have the coords if available
+        // But if geolocation itself failed, we should clear them
+        setUserCoords(null);
         switch(error.code) {
           case error.PERMISSION_DENIED:
-            showToast('Permission denied. Please enter manually.');
+            alert('Location access is blocked. Please enable it in your browser settings (click the padlock/tune icon next to the URL) or use the "Enter Location Manually" option.');
+            setView('search');
             break;
           case error.POSITION_UNAVAILABLE:
             showToast('Location unavailable. Try searching.');
@@ -418,7 +466,7 @@ export default function App() {
             Know Before The Lights Go Out. Check if your area has power, report outages, and read live updates from your community.
           </p>
           <div className="splash-actions">
-            <button className="btn-allow-location" onClick={handleLocationAccess}>Allow Location Access</button>
+            <button className="btn-allow-location" onClick={handleLocationAccess}>TAP TO CHECK</button>
             <button className="btn-manual-entry" onClick={() => setView('search')}>Enter Location Manually</button>
           </div>
         </div>
@@ -470,14 +518,16 @@ export default function App() {
   const expectedOutUI  = currentZone?.expectedOutage || null;
 
   return (
-    <div className="app-container detail-view">
-      <header className="detail-header-pro">
-        <button className="btn-icon" onClick={handleBack}><Icons.ArrowLeft /></button>
-        <div className="detail-title-pro">
-          <h2>{activeTab === 'community' ? 'Community' : activeTab === 'schedule' ? 'Power Schedule' : currentZone?.name}</h2>
-          <p>{activeTab === 'community' ? 'ANONYMOUS FEED' : activeTab === 'schedule' ? '7-DAY FORECAST' : activeTab.toUpperCase()}</p>
-        </div>
-      </header>
+    <div className={`app-container detail-view ${activeTab === 'maps' && isDarkMode ? 'theme-dark-nav' : ''}`}>
+      {activeTab !== 'maps' && (
+        <header className="detail-header-pro">
+          <button className="btn-icon" onClick={handleBack}><Icons.ArrowLeft /></button>
+          <div className="detail-title-pro">
+            <h2>{activeTab === 'schedule' ? 'Power Schedule' : activeTab === 'feed' ? 'Community Feed' : currentZone?.name}</h2>
+            <p>{activeTab === 'schedule' ? '7-DAY FORECAST' : activeTab.toUpperCase()}</p>
+          </div>
+        </header>
+      )}
 
       <main className="tab-content">
         {activeTab === 'home' && (
@@ -564,13 +614,13 @@ export default function App() {
             <div className="report-section-v2">
               <h3 className="section-title-v2">Update Status</h3>
               <div className="report-grid-v2">
-                <button className="btn-report-v2 outage" onClick={() => handleReport(null, 'off')}>
+                <button className="btn-report-v2 outage" onClick={() => handleAddReport(null, 'off')}>
                   <div className="btn-icon-v2">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
                   </div>
                   <span>Still No Light</span>
                 </button>
-                <button className="btn-report-v2 restored" onClick={() => handleReport(null, 'on')}>
+                <button className="btn-report-v2 restored" onClick={() => handleAddReport(null, 'on')}>
                   <div className="btn-icon-v2">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
                   </div>
@@ -698,110 +748,15 @@ export default function App() {
           </div>
         )}
 
-        {activeTab === 'community' && (
-          <div className="tab-pane animate-fade-in community-pane-v5">
-            {/* --- Messenger Feed --- */}
-            <div className="comm-v5-feed">
-              {currentZone?.notes.map((n, i) => (
-                <div
-                  key={i}
-                  className={`comm-v5-item${n.user === 'ECG_Official' ? ' comm-v5-item--official' : ''}`}
-                  style={{ animationDelay: `${i * 80}ms` }}
-                >
-                  <div className="cv5-content">
-                    <div className="cv5-row">
-                      <span className="cv5-name">
-                        {n.user === 'ECG_Official' ? 'ECG Western Region' : 'Anonymous'}
-                        {n.user === 'ECG_Official' && <span className="cv5-check"><Icons.VerifiedSmall /></span>}
-                      </span>
-                      <span className="cv5-time">{timeAgo(n.time)}</span>
-                    </div>
-                    <div className="cv5-row">
-                      <p className="cv5-text">{n.text}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* --- Composer (Anonymous send) --- */}
-            <div className="cv5-composer">
-              <div className="cv5-composer__inner">
-                <input
-                  className="cv5-composer__input"
-                  type="text"
-                  placeholder="Write a message anonymously…"
-                  value={noteText}
-                  onChange={(e) => setNoteText(e.target.value)}
-                  maxLength={200}
-                />
-                <button
-                  className="cv5-composer__send"
-                  onClick={handleAddNote}
-                  disabled={!noteText.trim()}
-                  aria-label="Send message"
-                >
-                  <Icons.Send />
-                </button>
-              </div>
-              <div className="cv5-composer__hint">Anonymous posting · 200 chars max</div>
-            </div>
+        {activeTab === 'maps' && (
+          <div className="tab-pane animate-fade-in maps-pane">
+            <MapComponent zones={zones} onZoneSelect={openZone} userCoords={userCoords} />
           </div>
         )}
 
-        {activeTab === 'alert' && (
-          <div className="tab-pane animate-fade-in alert-pane">
-            <div className="alert-header">
-              <h3>Smart Alerts</h3>
-              <p>Stay informed about power changes</p>
-            </div>
-
-            <div className="alert-section">
-              <div className="alert-card">
-                <div className="ac-row">
-                  <div className="ac-info">
-                    <div className="ac-icon ac-icon--yellow"><Icons.Bell /></div>
-                    <div>
-                      <div className="ac-title">Push Notifications</div>
-                      <div className="ac-desc">Get instant alerts for outages</div>
-                    </div>
-                  </div>
-                  <div className="ac-toggle ac-toggle--active">
-                    <div className="ac-toggle-knob"></div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="alert-card">
-                <div className="ac-row">
-                  <div className="ac-info">
-                    <div className="ac-icon ac-icon--green"><Icons.Home /></div>
-                    <div>
-                      <div className="ac-title">Restoration Alerts</div>
-                      <div className="ac-desc">Notify me when power is back</div>
-                    </div>
-                  </div>
-                  <div className="ac-toggle">
-                    <div className="ac-toggle-knob"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="alert-preview">
-              <div className="ap-label">Notification Preview</div>
-              <div className="ap-card">
-                <div className="ap-header">
-                  <div className="ap-app">
-                    <div className="ap-app-icon">C</div>
-                    <span>CHECKI</span>
-                  </div>
-                  <span>now</span>
-                </div>
-                <div className="ap-title">Power Outage Detected!</div>
-                <div className="ap-body">New reports suggest power is out in {currentZone?.name}. Expected back by 4 PM.</div>
-              </div>
-            </div>
+        {activeTab === 'feed' && (
+          <div className="tab-pane animate-fade-in feed-pane">
+            <FeedComponent zones={zones} onAddReport={handleAddReport} />
           </div>
         )}
       </main>
@@ -813,15 +768,30 @@ export default function App() {
         <button className={`nav-item ${activeTab === 'schedule' ? 'active' : ''}`} onClick={() => setActiveTab('schedule')}>
           <Icons.Calendar /><span>Schedule</span>
         </button>
-        <button className={`nav-item ${activeTab === 'community' ? 'active' : ''}`} onClick={() => setActiveTab('community')}>
-          <Icons.Users /><span>Community</span>
+        <button className={`nav-item ${activeTab === 'maps' ? 'active' : ''}`} onClick={() => setActiveTab('maps')}>
+          <Icons.Map /><span>Maps</span>
         </button>
-        <button className={`nav-item ${activeTab === 'alert' ? 'active' : ''}`} onClick={() => setActiveTab('alert')}>
-          <Icons.Bell /><span>Alert</span>
+        <button className={`nav-item ${activeTab === 'feed' ? 'active' : ''}`} onClick={() => setActiveTab('feed')}>
+          <Icons.Feed /><span>Feed</span>
         </button>
       </nav>
 
       <Toast message={toast.message} visible={toast.visible} />
+
+      {showSuccessModal && (
+        <div className="sweet-alert-backdrop">
+          <div className="sweet-alert-card animate-pop-in">
+            <div className="alert-success-icon">
+              <Icons.VerifiedSmall />
+            </div>
+            <h3>Great job!</h3>
+            <p>{successMsg}</p>
+            <div className="alert-footer-stats">
+              <span>Your contribution helps 10,000+ people</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
