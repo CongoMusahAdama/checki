@@ -243,22 +243,112 @@ export default function App() {
     showToast('Note posted');
   };
 
-  const handleLocationAccess = () => {
-    if (!navigator.geolocation) { showToast('Location not supported'); return; }
-    showToast('Detecting your community...');
+  // ── CALENDAR & ALERTS ─────────────────
+  const parseTime = (timeStr, dateStr) => {
+    try {
+      const [time, modifier] = timeStr.split(' ');
+      let [hours, minutes] = time.split(':');
+      if (hours === '12') hours = '00';
+      if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+      
+      const date = new Date(dateStr);
+      date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+      return date;
+    } catch (e) { return new Date(); }
+  };
+
+  const handleSyncToCalendar = (block, dateLabel) => {
+    const startTime = parseTime(block.start, dateLabel);
+    const endTime = parseTime(block.end, dateLabel);
     
+    const formatICSDate = (date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'BEGIN:VEVENT',
+      `DTSTART:${formatICSDate(startTime)}`,
+      `DTEND:${formatICSDate(endTime)}`,
+      `SUMMARY:Power Outage - ${block.areas ? 'Checki Area' : block.label}`,
+      `DESCRIPTION:Scheduled power outage from ${block.start} to ${block.end}. Affected: ${block.areas?.join(', ') || 'Your area'}`,
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'power-outage.ics');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Calendar event created');
+  };
+
+  const handleSetAlert = (block, dateLabel) => {
+    if (!("Notification" in window)) {
+      showToast("Browser doesn't support notifications");
+      return;
+    }
+
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        const startTime = parseTime(block.start, dateLabel);
+        const now = new Date();
+        const alertTime = new Date(startTime.getTime() - 60 * 60 * 1000); // 1 hour before
+
+        if (alertTime < now) {
+          showToast('Outage is in less than an hour!');
+          return;
+        }
+
+        const delay = alertTime.getTime() - now.getTime();
+        setTimeout(() => {
+          new Notification('Checki: Power Outage Alert', {
+            body: `Your area is scheduled for an outage in 1 hour (${block.start}).`,
+            icon: '/favicon.ico'
+          });
+        }, delay);
+
+        showToast('Alert set for 1 hour before outage');
+      } else {
+        showToast('Notification permission denied');
+      }
+    });
+  };
+
+  const handleLocationAccess = () => {
+    if (!navigator.geolocation) {
+      showToast('Location not supported on this device');
+      return;
+    }
+    
+    showToast('Locating your community...');
+    
+    const geoOptions = {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    };
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
+        console.log(`Detected coords: ${lat}, ${lng}`);
         
         try {
           // Real reverse geocoding using OpenStreetMap (Nominatim)
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
             headers: { 'User-Agent': 'Checki-App-V3' }
           });
+          
+          if (!response.ok) throw new Error('Network response was not ok');
           const data = await response.json();
           
           if (data && data.address) {
+            console.log('Reverse geocoding data:', data.address);
+            
             // Get all address values as an array of strings
             const addressValues = Object.values(data.address).map(val => normaliseArea(val));
             
@@ -278,23 +368,39 @@ export default function App() {
                                     data.address.village || 
                                     data.address.town || 
                                     data.address.city_district ||
+                                    data.address.county ||
                                     'Unknown Area';
+              
               showToast(`You are in ${communityName}`);
+              // If not found in our predefined list, send them to search with the community name pre-filled
+              setSearch(communityName);
               setTimeout(() => setView('search'), 1500);
             }
           } else {
-            showToast('Could not identify community. Try searching.');
+            showToast('Could not identify area. Try searching.');
           }
         } catch (error) {
           console.error('Geocoding error:', error);
-          showToast('Location service unavailable');
+          showToast('Location service busy. Try manual entry.');
         }
       },
       (error) => {
         console.warn('Geolocation error:', error);
-        showToast('Access denied. Please enter manually.');
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            showToast('Permission denied. Please enter manually.');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            showToast('Location unavailable. Try searching.');
+            break;
+          case error.TIMEOUT:
+            showToast('Location request timed out. Try again.');
+            break;
+          default:
+            showToast('Location error. Please enter manually.');
+        }
       },
-      { timeout: 10000 }
+      geoOptions
     );
   };
 
@@ -526,6 +632,16 @@ export default function App() {
                         : `No scheduled outage found for "${toTitleCase(myAreaQuery)}" today.`
                       }
                     </div>
+                    {myAreaResult.status === 'affected' && (
+                      <div className="search-result-actions" style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                        <button className="btn-action-sm" onClick={() => handleSyncToCalendar(myAreaResult.block, (selectedDayIdx === 0 ? OUTAGE_SCHEDULE_TODAY : OUTAGE_SCHEDULE_TOMORROW).dateLabel)}>
+                          <Icons.Calendar /> <span>Sync Cal</span>
+                        </button>
+                        <button className="btn-action-sm" onClick={() => handleSetAlert(myAreaResult.block, (selectedDayIdx === 0 ? OUTAGE_SCHEDULE_TODAY : OUTAGE_SCHEDULE_TOMORROW).dateLabel)}>
+                          <Icons.Bell /> <span>Set Alert</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
